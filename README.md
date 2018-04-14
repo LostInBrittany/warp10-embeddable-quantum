@@ -2,6 +2,8 @@
 
 An easily embeddable version of Warp 10&#39;s Quantum
 
+![Screenshot](./images/screenshot.jpg)
+
 ## Install the Polymer-CLI
 
 First, make sure you have the [Polymer CLI](https://www.npmjs.com/package/polymer-cli) installed. Then run `polymer serve` to serve your element locally.
