@@ -1,0 +1,63 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-overlay-behavior/iron-overlay-behavior.html">
+
+<dom-module id="quantum-image-overlay">
+
+
+  <template>
+    <style>
+      :host {
+        background: white;
+        color: black;
+        padding: 24px;
+        box-shadow: rgba(0, 0, 0, 0.24) -2.3408942051048403px 5.524510324047423px 12.090680100755666px 0, rgba(0, 0, 0, 0.12) 0 0 12px 0;
+      }
+    </style>
+
+    <div>
+      <img src="{{src}}"/>
+    </div>
+    <div>{{caption}}</div>
+  </template>
+
+</dom-module>
+
+<script>
+  class QuantumImageOverlay extends Polymer.mixinBehaviors([Polymer.IronOverlayBehavior], Polymer.Element) {
+    static get is() {
+      return 'quantum-image-overlay';
+    }
+
+    static get properties() {
+      return {
+        src: {
+          type: String,
+        },
+        caption: {
+          type: String,
+          value: '',
+        },
+        debug: {
+          type: Boolean,
+          value: false,
+        },
+      };
+    }
+
+    ready() {
+      super.ready();
+      this.addEventListener('iron-overlay-canceled', (e) => this.onCancel(e));
+    }
+
+    onCancel() {
+      if (this.debug) {
+        console.debug('[quantum-image-overlay] onCancel', this.getAttribute('imageClicked'));
+      }
+      this.removeAttribute('imageClicked');
+    }
+  }
+
+  // Register custom element definition using standard platform API
+  customElements.define(QuantumImageOverlay.is, QuantumImageOverlay);
+
+</script>

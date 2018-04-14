@@ -1,0 +1,466 @@
+<!--
+@author Horacio Gonzalez (@lostinbrittany)
+@copyright (c) 2016 Cityzen Data
+@license Apache 2.0
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../app-localize-behavior/app-localize-behavior.html">
+
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-listbox/paper-listbox.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-toggle-button/paper-toggle-button.html">
+
+<link rel="import" href="../ace-widget/ace-widget.html">
+<link rel="import" href="../granite-ajax-saver/granite-ajax-saver.html">
+<link rel="import" href="../granite-alert/granite-alert.html">
+<link rel="import" href="../granite-spinner/granite-spinner.html">
+
+<link rel="import" href="../warp10-iron/warp10-iso-date-time-or-timestamp-validator.html">
+
+<link rel="import" href="./quantum-module-mixin.html">
+
+
+<!--
+Quantum fetch widget
+
+
+    <quantum-fetch
+      choose-backend  backend="{{backend}}">
+    </quantum-fetch>
+-->
+<dom-module id="quantum-fetch">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 30px;
+        --app-primary-color: var(--google-blue-500);
+        --app-secondary-color: black;
+        --app-background-color: white;
+        --app-on-background-color: white;
+      }
+
+      .top-10 {
+        margin-top: 10px;
+      }
+
+      .right {
+        float: right;
+      }
+
+      #editor {
+        min-height: 300px;
+        font-size: 14px;
+      }
+
+      #token, #selector {
+        width: 100%;
+      }
+
+      h4 {
+        font-weight: bold;
+      }
+
+      granite-alert[hidden] {
+        display: none;
+      }
+
+      paper-button {
+        background-color: var(--app-primary-color);
+        color: var(--app-on-background-color)
+      }
+
+      granite-spinner {
+        z-index: 100;
+      }
+
+      .item {
+        margin-top: 8px;
+        margin-bottom: 8px;
+      }
+
+      .item_name {
+        color: var(--paper-grey-600);
+        font-family: 'Roboto', 'Noto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        font-weight: 400;
+        letter-spacing: 0.011em;
+        line-height: 20px;
+      }
+
+      .item_value {
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        @apply --layout-wrap;
+      }
+
+      .clearfix:before,
+      .clearfix:after {
+        content: " "; /* 1 */
+        display: table; /* 2 */
+      }
+
+      .clearfix:after {
+        clear: both;
+      }
+
+      .title {
+        text-transform: capitalize;
+      }
+
+      #chooseFetchMethod {
+        margin-top: 15px;
+      }
+
+      #chooseFetchMethod > .item_value > *:first-child {
+        margin-right: 15px;
+      }
+
+      #chooseFetchMethod paper-toggle-button {
+        --paper-toggle-button-checked-bar-color: var(--app-primary-color);
+        --paper-toggle-button-checked-button-color: var(--app-primary-color);
+        --paper-toggle-button-checked-ink-color: var(--app-primary-color);
+        --paper-toggle-button-unchecked-bar-color: var(--app-primary-color);
+        --paper-toggle-button-unchecked-button-color: var(--app-primary-color);
+        --paper-toggle-button-unchecked-ink-color: var(--app-primary-color);
+      }
+
+      #chooseOther {
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        @apply --layout-justified;
+      }
+    </style>
+
+    <h2 class="title">{{name}}</h2>
+
+    <granite-spinner
+      active="{{loading}}"
+      size="200"
+      hover></granite-spinner>
+
+    <div class="top-10">
+      <paper-input
+        auto-validate
+        prevent-invalid-input
+        always-float-label
+        name="token"
+        label="Read token"
+        type="text"
+        value="{{paramToken}}"
+        required></paper-input>
+    </div>
+
+    <div class="top-10">
+      <paper-input
+        auto-validate
+        prevent-invalid-input
+        always-float-label
+        name="selector"
+        label="[[localize('selector')]]"
+        type="text"
+        value="{{paramSelector}}"
+        required></paper-input>
+    </div>
+
+    <div id="chooseFetchMethod" class="top-10 item">
+      <div class="item_name">
+        {{localize('fetchMethod')}}
+      </div>
+      <div class="item_value">
+        <div>
+          {{localize('fetchByDate')}}
+        </div>
+        <div>
+          <paper-toggle-button checked="{{fetchByTimespan}}"></paper-toggle-button>
+        </div>
+        <div>
+          {{localize('fetchByTimespan')}}
+        </div>
+      </div>
+    </div>
+
+    <template is="dom-if" if="{{!fetchByTimespan}}">
+      <div id="chooseTimespan" class="top-10 item">
+        <paper-input
+          auto-validate
+          prevent-invalid-input
+          always-float-label
+          label="{{localize('startTime')}}"
+          type="text"
+          value="{{paramStartTime}}"
+          validator="warp10-iso-date-time-or-timestamp-validator"
+          required></paper-input>
+        <paper-input
+          auto-validate
+          prevent-invalid-input
+          always-float-label
+          label="{{localize('endTime')}}"
+          type="text"
+          value="{{paramEndTime}}"
+          validator="warp10-iso-date-time-or-timestamp-validator"
+          required></paper-input>
+      </div>
+    </template>
+    <template is="dom-if" if="{{fetchByTimespan}}">
+      <div id="chooseTimespan" class="top-10 item">
+        <paper-input
+          auto-validate
+          prevent-invalid-input
+          always-float-label
+          label="{{localize('timestamp')}}"
+          type="text"
+          value="{{paramTimestamp}}"
+          validator="warp10-iso-date-time-or-timestamp-validator"
+          required></paper-input>
+        <paper-input
+          auto-validate
+          prevent-invalid-input
+          always-float-label
+          label="{{localize('timespan')}}"
+          type="text"
+          value="{{paramTimespan}}"
+          allowed-pattern="[-+0-9]"
+          required></paper-input>
+      </div>
+    </template>
+
+    <div id="chooseOther" class="top-10">
+      <paper-dropdown-menu label="{{localize('format')}}" selected-item="{{paramFormat}}">
+        <paper-listbox class="dropdown-content" selected="0">
+          <paper-item name="text">{{localize('text')}}</paper-item>
+          <paper-item name="fulltext">{{localize('fulltext')}}</paper-item>
+          <paper-item name="json">{{localize('json')}}</paper-item>
+        </paper-listbox>
+      </paper-dropdown-menu>
+      <paper-checkbox checked="{{paramDedup}}">{{localize('dedup')}}
+    </div>
+
+    <div class="top-10">
+      <div class="right">
+        <paper-button
+          id="btn_execute"
+          class="btn btn-primary btn-lg"
+          on-click="execute"
+          disabled$="{{_disabled}}">
+          Execute!
+        </paper-button>
+      </div>
+    </div>
+
+    <div class="clearfix"></div>
+
+    <div class="top-10">
+      <granite-alert level="danger" hidden$="{{!_hasAnError}}">
+        {{errorMsg}}
+      </granite-alert>
+      <granite-alert level="success" hidden$="{{!_hasAResponse}}">
+        {{data}}
+      </granite-alert>
+    </div>
+
+
+    <granite-ajax-saver
+      id="xhr"
+      url="{{_baseUrl}}"
+      method='GET'
+      handle-as="json"
+      on-response="_handleResponse"
+      on-error="_handleError"></granite-ajax-saver>
+
+  </template>
+
+  <script>
+    /* globals Warp10 */
+    class QuantumFetch extends
+        // eslint-disable-next-line new-cap
+        Warp10QuantumModuleMixin(Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element)) {
+      static get is() {
+        return 'quantum-fetch';
+      }
+
+      static get properties() {
+        return {
+          /**
+           * A WRITE token valable for the GTS to be updated
+           */
+          paramToken: {
+            type: String,
+            value: '',
+          },
+          /**
+           * The Selector to fetch
+           */
+          paramSelector: {
+            type: String,
+            value: '',
+          },
+          paramDedup: {
+            type: Boolean,
+            value: false,
+          },
+          paramFormat: {
+            type: Object,
+            value: null,
+          },
+          paramStartTime: {
+            type: String,
+          },
+          paramEndTime: {
+            type: String,
+          },
+          paramTimespan: {
+            type: String,
+          },
+
+          paramTimestamp: {
+            type: String,
+          },
+          fetchByTimespan: {
+            type: Boolean,
+            value: false,
+          },
+          _baseUrl: {
+            type: String,
+            computed: '_getBaseUrl(backend)',
+          },
+          _disabled: {
+            type: Boolean,
+        // eslint-disable-next-line max-len
+            computed: '_isDisabled(paramToken, paramSelector, fetchByTimespan, paramStartTime, paramEndTime, paramTimestamp, paramTimespan, paramFormat, paramDedup)',
+          },
+          language: {
+            value: 'en',
+          },
+          /* Overriden from AppLocalizeBehavior */
+          resources: {
+            type: Object,
+            value: function() {
+              return {
+                en: {
+                  title: 'Delete',
+                  writeToken: 'Write token',
+                  selector: 'Selector to fetch',
+                  execute: 'Execute',
+                  fetchByTimespan: 'By timespan',
+                  fetchByDate: 'By dates',
+                  fetchMethod: 'Choose fetch mode:',
+                  startTime: 'Start time (in ISO 8601 format or in μs since Epoch)',
+                  endTime: 'End time (in ISO 8601 format or in μs since Epoch)',
+                  timestamp: 'End timestamp (in μs since Epoch)',
+                  timespan: 'Timespan (if positive, in μs) or number of points (if negative, -n for n points)',
+                  dedup: 'Dedup',
+                  format: 'Format',
+                  fulltext: 'Fulltext',
+                  text: 'Text',
+                  json: 'JSON',
+                },
+              };
+            },
+          },
+          debug: {
+            type: Boolean,
+            value: false,
+          },
+        };
+      }
+
+      // ************************************************************************
+      // Lifecycle methods                                                      
+      // ************************************************************************
+      ready() {
+        super.ready();
+        this._hasAnError = 0;
+        this._hasAResponse = 0;
+      }
+
+      // ************************************************************************
+      // Computed porperties                                                    
+      // ************************************************************************
+      _getBaseUrl() {
+        if (this.debug) {
+          console.log('[quantum-fetch] _getBaseUrl', this.backend);
+        }
+        return this.backend.url + this.backend.fetchEndpoint;
+      }
+
+      _isDisabled() {
+        // token, selector, fetchByTimespan, paramStartTime, paramEndTime, timestamp, paramTimespan, paramFormat, paramDedup
+        if (this.debug) {
+          console.log('[quantum-fetch] _isDisabled', !this.paramToken || !this.paramSelector || (this.fetchByTimespan && (!this.paramTimestamp || !this.paramTimespan) ) || (!this.fetchByTimespan && (!this.paramStartTime || !this.paramEndTime) ) || !this.paramFormat);
+        }
+        return !!(!this.paramToken || !this.paramSelector ||
+          (this.fetchByTimespan && (!this.paramTimestamp || !this.paramTimespan) ) ||
+          (!this.fetchByTimespan && (!this.paramStartTime || !this.paramEndTime) ) ||
+          !this.paramFormat);
+      }
+
+      // ************************************************************************
+      // Action Listeners                                                       
+      // ************************************************************************
+      execute() {
+        let header = this.backend.headerName + '-Token';
+        this.$.xhr.headers = {};
+        this.$.xhr.params = {
+          'selector': this.paramSelector,
+          'dedup': this.paramDedup,
+          'format': this.paramFormat.getAttribute('name'),
+        };
+        if (this.fetchByTimespan) {
+          this.$.xhr.params.now = this.paramTimestamp;
+          this.$.xhr.params.timespan = this.paramTimespan;
+        } else {
+          this.$.xhr.params.start = this.paramStartTime;
+          this.$.xhr.params.stop = this.paramEndTime;
+        }
+        this.$.xhr.headers[header] = this.paramToken;
+        if (this.debug) {
+          console.log('[quantum-fetch] _doCall - headers', this.$.xhr.headers);
+        }
+        this.$.xhr.generateRequest();
+      }
+
+      // ************************************************************************
+      // Event Listeners                                                        
+      // ************************************************************************
+      _editorChangeAction(value, oldValue) {
+        this.dispatchEvent(new CustomEvent('editor-content', {detail: {value: value, oldValue: oldValue}}));
+        this.content = value.detail.value;
+        if (this.debug) {
+          console.log('[quantum-fetch] Ide content changed', this.content);
+        }
+      }
+
+      _handleResponse(event, ironRequest) {
+        if (this.debug) {
+          console.log('[quantum-fetch] _handleResponse - Updated!', ironRequest.response);
+        }
+        this._hasAResponse = true;
+        this._hasAnError = false;
+        this.data = ironRequest.response;
+      }
+
+      _handleError(event, ironRequest) {
+        if (this.debug) {
+          console.log('[quantum-fetch] _handleError - Updated!', ironRequest);
+        }
+        this._hasAResponse = false;
+        this._hasAnError = true;
+        this.data = null;
+        this.errorMsg = ironRequest.request.statusText || 'Unkown error';
+      }
+    }
+
+    // Register custom element definition using standard platform API
+    customElements.define(QuantumFetch.is, QuantumFetch);
+  </script>
+</dom-module>

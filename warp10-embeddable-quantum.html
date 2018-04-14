@@ -1,0 +1,399 @@
+<!--
+@author Horacio Gonzalez (@lostinbrittany)
+@copyright (c) 2018 Horacio Gonzalez
+@license Apache 2.0
+-->
+<link rel="import" href="../polymer/polymer-element.html">
+
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../paper-button/paper-button.html">
+
+<link rel="import" href="../warp10-iron/warp10-warpscript-caller.html">
+
+<link rel="import" href="../ace-widget/ace-widget.html">
+<link rel="import" href="../granite-alert/granite-alert.html">
+<link rel="import" href="../granite-spinner/granite-spinner.html">
+
+<link rel="import" href="../warp10-quantum-elements/quantum-response-container.html">
+<link rel="import" href="../warp10-quantum-elements/quantum-icons.html">"
+
+<script src="../warp10-quantum-elements/ace/mode-warpscript.js"></script>
+
+<script src="../ace-builds/src-min-noconflict/theme-eclipse.js"></script>
+<script src="../ace-builds/src-min-noconflict/snippets/text.js"></script>
+
+
+<dom-module id="warp10-embeddable-quantum">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 30px;
+        --app-primary-color: var(--google-blue-500);
+        --app-secondary-color: black;
+        --app-background-color: white;
+        --app-on-background-color: white;
+      }
+      .title {
+        text-transform: capitalize;
+      }
+
+      .button_bar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+
+      .clearfix:before,
+      .clearfix:after {
+        content: " "; /* 1 */
+        display: table; /* 2 */
+      }
+
+      .clearfix:after {
+        clear: both;
+      }
+      
+      .top-10 {
+        margin-top: 10px;
+      }
+
+      quantum-response-container[hidden] {
+        display: none;
+      }
+      granite-alert[hidden] {
+        display: none;
+      }
+      paper-button {
+        background-color: var(--app-primary-color);
+        color: var(--app-on-background-color);
+        margin: 5px;
+      }
+      paper-button iron-icon {
+        padding-right: 10px;
+      }
+
+      granite-spinner {
+        z-index: 100;
+      }
+    </style>
+
+    <warp10-warpscript-caller
+        id="warpscriptcaller"
+        url="[[_baseUrl]]" warpscript="[[warpscript]]"
+        on-response="_handleResponse" on-error="_handleError"
+        loading="{{loading}}"
+        debug="[[debug]]"></warp10-warpscript-caller>
+
+    <ace-widget
+        id="editor"
+        theme="ace/theme/eclipse"
+        mode="ace/mode/warpscript"
+        softtabs="true"
+        wrap="true"
+        placeholder="Type your WarpScript here..."
+        on-editor-content="editorChangeAction"
+        initial-focus
+        debug="[[debug]]"></ace-widget>       
+        
+        
+    <granite-spinner
+      active="[[loading]]"
+      size="200"
+      hover></granite-spinner>
+
+    <div class="top-10 button_bar">
+      <paper-button
+          id="btn_execute"
+          class="btn btn-primary btn-lg"
+          on-click="execute"
+          disabled$="{{loading}}">
+        <iron-icon icon="quantum-icons:check"></iron-icon>
+        Execute
+      </paper-button>
+    </div>
+
+    <template is="dom-if" if="{{_elapsedTimeShown}}">
+      <div class="clearfix"></div>
+      <div class="top-10">
+        <div class="right">
+          Your last script execution took {{_formattedElapsedTime}} serverside, 
+          fetched {{_fetched}} datapoints and performed {{_operations}} WarpScript operations.
+        </div>
+      </div>
+    </template>
+    <div class="clearfix"></div>      
+
+    <div class="top-10">
+      <quantum-response-container
+        id="response_container"
+        response="{{stack}}"
+        debug="[[debug]]"
+        received="{{received}}"
+        hidden$="{{!_hasAResponse}}"></quantum-response-container>
+      <granite-alert level="danger" hidden$="{{!_hasAnError}}">
+        {{errorMsg}}
+      </granite-alert>
+    </div>
+
+  </template>
+
+  <script>
+    /**
+     * `warp10-embeddable-quantum`
+     * An easily embeddable version of Warp 10&#39;s Quantum
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class Warp10EmbeddableQuantum extends Polymer.Element {
+      static get is() { return 'warp10-embeddable-quantum'; }
+    
+
+      static get properties() {
+        return {
+          /**
+           * The WarpScript
+           */
+          warpscript: {
+            type: String,
+            value: '',
+            observer: '_onWarpscriptChange',
+          },
+          /**
+            * The choosen backend
+            *  The `backend` object is composed of:
+            *
+            *  - `id`: an unique id, a simple string to be used as HTML id
+            *  - `label`: the label to show in the UI
+            *  - `url`: the backend URL
+            *  - `execEndpoint`: the path of the WarpScript execution endpoint
+            *  - `findEndpoint`: the path of the Find endpoint
+            *  - `updateEndpoint`: the path of the update endpoint
+            *  - `deleteEndpoint`: the path of the delete endpoint
+            *  - `headerName`: the Warp10 header name to add for different operations
+            *
+            *  @type Backend
+            */
+          backend: {
+            type: Object,
+            observer: '_backendChanged',
+            notify: true,
+          },
+          /**
+            * The default backend
+            *  {
+            *    "id": "default",
+            *    "label": "Default backend",
+            *    "url": "http://127.0.0.1:8080/api/v0",
+            *    "execEndpoint": "/exec",
+            *    "findEndpoint": "/find",
+            *    "updateEndpoint": "/update",
+            *    "deleteEndpoint": "/delete",
+            *    "headerName": "X-Warp10-Token"
+            *  }
+            */
+          defaultBackend: {
+            type: Object,
+            value: {
+              'id': 'default',
+              'label': 'Default backend',
+              'url': 'http://127.0.0.1:8080/api/v0',
+              'execEndpoint': '/exec',
+              'findEndpoint': '/find',
+              'updateEndpoint': '/update',
+              'deleteEndpoint': '/delete',
+              'headerName': 'X-Warp10-Token',
+            },
+          },
+          /**
+           * The WarpScript stack received as response
+           */
+          stack: {
+            type: Array,
+            notify: true,
+          },
+          /**
+           * Elapsed time for the call
+           */
+          elapsed: {
+            type: Number,
+            value: -1,
+          },
+          _formattedElapsedTime: {
+            type: String,
+            computed: '_formatElapsedTime(elapsed)',
+          },
+          _elapsedTimeShown: {
+            type: Boolean,
+            computed: '_isElapsedTimeShown(elapsed)',
+          },
+          _hasAResponse: {
+            type: Boolean,
+            value: false,
+          },
+          _hasAnError: {
+            type: Boolean,
+            value: false,
+          },
+          _baseUrl: {
+            type: String,
+            computed: '_getBaseUrl(backend,backend.*)',
+          },
+          _dataToPlot: {
+            type: Array,
+            value: () => [],
+          },
+          debug: {
+            type: Boolean,
+            value: false,
+          },
+        };
+      }
+      connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('storage', (evt) => {
+          if (this.debug) {
+            console.log('[wapr10-embeddable-quantum] onStorage', evt.key);
+          }
+          if (evt.key == 'warp10-backend-conf') {
+            this.backend = JSON.parse(localStorage.getItem('warp10-backend-conf'));
+          }
+        });
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum] connectedCallback');
+        }
+        this._backendChanged();
+      }
+
+      // ************************************************************************
+      // Computed properties
+      // ************************************************************************
+      _formatElapsedTime() {
+        if (this.elapsed < 1000) {
+          return '' + this.elapsed + ' ns';
+        }
+        if (this.elapsed < 1000000) {
+          return '' + (this.elapsed / 1000).toFixed(3) + ' μs';
+        }
+        if (this.elapsed < 1000000000) {
+          return '' + (this.elapsed / 1000000).toFixed(3) + ' ms';
+        }
+        return '' + (this.elapsed / 1000000000).toFixed(3) + ' s';
+      }
+
+      _isElapsedTimeShown() {
+        return this.elapsed > 0;
+      }
+
+      _getBaseUrl() {
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum] _getBaseUrl', this.backend);
+        }
+        return this.backend.url + this.backend.execEndpoint;
+      }
+
+
+      // ************************************************************************
+      // Observers
+      // ************************************************************************
+      _onWarpscriptChange() {
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum] _onWarpscriptChange', this.warpscript);
+        }
+      }
+      _backendChanged() {
+        if (!this.backend) {
+          this.backend = this.defaultBackend;
+        }
+        if (!this.backend.url) {
+          this.set('backend.url', this.defaultBackend.url);
+        }
+        if (!this.backend.execEndpoint) {
+          this.set('backend.execEndpoint', this.defaultBackend.execEndpoint);
+        }
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum] _backendChanged', this.backend);
+        }
+      }
+
+      // ************************************************************************
+      // Event Listeners
+      // ************************************************************************
+      _handleResponse(event, response) {
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] _handleResponse', event, response);
+        }
+        if (!response.stack || !(response.stack instanceof Array)) {
+          return;
+        }
+        this.elapsed = response.options.elapsed;
+        this._fetched = response.options.fetched;
+        this._operations = response.options.operations;
+        this.stack = response.stack;
+        this._hasAResponse = true;
+        this._hasAnError = false;
+        this.$.response_container.responseChanged();
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] _handleResponse', {
+            stack: this.stack,
+            elapsed: this.elapsed,
+          });
+        }
+      }
+
+      _handleError(event, error) {
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] _handleError', error);
+        }
+        if (!error.errorLine || !error.errorMsg) {
+          if (error.request.xhr.responseText.match(/<pre>\s*(.*)\s*<\/prse>/)) {
+            this.errorMsg = error.request.xhr.responseText.match(/<pre>\s*(.*)\s*<\/prse>/)[1];
+          } else {
+            if (!error.request.xhr.statusText || '' === error.request.xhr.statusText) {
+              this.errorMsg = 'Unable to reach ' + error.request.url;
+            } else {
+              this.errorMsg = error.request.statusText;
+            }
+          }
+        } else {
+          this.errorMsg = 'ERROR line #' + error.errorLine + ': ' + error.errorMsg;
+        }
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] _handleError', {error: error, errorMsg: this.errorMsg});
+        }
+
+        this.elapsed = error.elapsed;
+        this._fetched = error.fetched;
+        this._operations = error.operations;
+        this._hasAResponse = false;
+        this._hasAnError = true;
+      }
+
+      editorChangeAction(value, oldValue) {
+        this.warpscript = value.detail.value;
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] editorChangeAction', this.warpscript);
+        }
+      }
+
+
+      // ************************************************************************
+      // Action listeners
+      // ************************************************************************
+      /**
+       * Executes the warpscript request
+       */
+       execute() {
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum] Execute', this.warpscript);
+        }
+        this.$.warpscriptcaller.generateRequest();
+      }
+    }
+
+    window.customElements.define(Warp10EmbeddableQuantum.is, Warp10EmbeddableQuantum);
+  </script>
+</dom-module>
