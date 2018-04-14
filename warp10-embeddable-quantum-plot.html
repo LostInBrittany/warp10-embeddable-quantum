@@ -1,0 +1,237 @@
+<!--
+@author Horacio Gonzalez (@lostinbrittany)
+@copyright (c) 2018 Horacio Gonzalez
+@license Apache 2.0
+-->
+<link rel="import" href="../polymer/polymer-element.html">
+
+<link rel="import" href="../paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../paper-radio-group/paper-radio-group.html">
+
+<link rel="import" href="../warp10-iron/warp10-gts-tools.html">
+<link rel="import" href="../warp10-iron/warp10-gts-plotting-tools.html">
+
+<link rel="import" href="../warp10-quantum-elements/quantum-gts-tree.html">
+
+<link rel="import" href="../warp10-quantumviz/warp10-display-dy-chart.html">
+<link rel="import" href="../warp10-quantumviz/quantumviz-annotations.html">
+
+<dom-module id="warp10-embeddable-quantum-plot">
+  <template>
+    <style>
+      :host {
+        display: block;
+        --app-primary-color: var(--google-blue-500);
+        --app-secondary-color: black;
+        --app-background-color: white;
+        --app-on-background-color: white;
+      }
+
+      #vertGuide {
+        width: 0;
+        height: 100%;
+        border: solid 1px #aaaaaa;
+        z-index: 500;
+        position: absolute;
+        left: 250px;
+        display: none;
+      }
+
+      .item_list {
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        @apply --layout-center-justified;
+        @apply --layout-wrap;
+      }
+
+      .item:not(:first-child) {
+        margin-left: 30px;
+      }
+
+      .item {
+        margin-top: 8px;
+        margin-bottom: 8px;
+      }
+
+      .item_name {
+        color: var(--paper-grey-600);
+        font-family: 'Roboto', 'Noto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        font-weight: 400;
+        letter-spacing: 0.011em;
+        line-height: 20px;
+      }
+
+      .item_value {
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        @apply --layout-wrap;
+        min-height: 44px;
+      }
+    </style>
+
+    <h3>Plot:</h3>
+
+    <quantum-gts-tree
+        id="gts-tree"
+        data="{{_gtsStack}}"
+        plotted-changed="{{changed}}"
+        on-plotted-changed="_onPlottedChanged"
+        on-show-image="_handleShowImage"
+        on-hide-image="_handleHideImage"
+        debug="[[debug]]"></quantum-gts-tree>
+
+
+    <div id="vertGuide"></div>
+
+
+    <quantumviz-annotations
+        id="warp10-quantumviz-annotations"
+        time-bounds="{{timeBounds}}"
+        chart-area="{{chartArea}}"
+        data="{{dataToPlot}}"
+        vert-guide="{{vertGuide}}"
+        width="{{_displayWidth}}"
+        selected-timestamp="{{annotationsSelectedTimestamp}}"
+        debug="[[debug]]"
+        timestamps="{{timestamps}}"></quantumviz-annotations>
+
+  <warp10-display-chart
+    id="warp10-display-chart"
+    width="{{_displayWidth}}"
+    height="500"
+    data="{{dataToPlot}}"
+    current-values="{{currentValues}}"
+    time-bounds="{{timeBounds}}"
+    chart-area="{{chartArea}}"
+    debug="[[debug]]"
+    timestamps="{{timestamps}}"></warp10-display-chart>
+
+    <div class="item_list">
+      <div class="item ">
+        <div class="item_name">Interpolation</div>
+        <paper-radio-group
+          id="interpolationRadioGroup"
+          selected="{{interpolationMode}}">
+          <paper-radio-button
+            id="interpolation_linear"
+            name="linear">
+            Linear
+          </paper-radio-button>
+          <paper-radio-button
+            id="interpolation_step"
+            name="step-before">
+            Step
+          </paper-radio-button>
+        </paper-radio-group>
+      </div>
+      <div class="item">
+        <div class="item_name">X-axis scale</div>
+        <div class="item_value">Date
+          <paper-toggle-button checked="{{timestamps}}" class="timestamps"></paper-toggle-button>
+          Timestamp
+        </div>
+      </div>
+    </div>
+
+  </template>
+  <script>
+    /**
+     * `warp10-embeddable-quantum-conf`
+     * An configuration element for warp10-embeddable-quantum-conf
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class Warp10EmbeddableQuantumPlot extends Polymer.Element {
+      static get is() { return 'warp10-embeddable-quantum-plot'; }
+      static get properties() {
+        return {
+          /**
+           * The WarpScript stack to plot
+           */
+          stack: {
+            type: Array,
+            notify: true,
+          },
+          stackedGtsList: {
+            type: Array,
+          },
+          /**
+           * The interpolation model. Currently supported modes: linear, step, cardinal
+           */
+          interpolationMode: {
+            type: String,
+            observer: '_onInterpolationModeChanged',
+            value: 'linear',
+          },
+          _gtsStack: {
+            type: Array,
+            computed: '_getGtsStack(stack)',
+            observer: '_onStackChanged',
+          },
+        }
+      }  
+
+      // ************************************************************************
+      // Computed properties
+      // ************************************************************************
+      _getGtsStack() {
+        return gtsTools.gtsFromJSONList(this.stack);
+      }
+
+      // *************************************************************************
+      // Observers
+      // *************************************************************************
+
+      _onStackChanged() {
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum-plot] _onStackChanged', 
+              this._gtsStack,  gtsTools.flattenGtsIdArray(this._gtsStack));
+        }
+        if (this._gtsStack) {
+          let flattenedGtsIdArray = gtsTools.flattenGtsIdArray(this._gtsStack, []);
+          plottingTools.refresh(flattenedGtsIdArray);
+          this.stackedGtsList = flattenedGtsIdArray;
+          if (this.debug) {
+            console.log('[wapr10-embeddable-quantum-plot] _onStackChanged - do refresh', this.stackedGtsList);
+          }
+          this.dispatchEvent(new CustomEvent('plotted-changed', {
+            detail: plottingTools,
+            bubbles: true,
+            composed: true
+          }));
+        }
+      }
+
+
+      _onInterpolationModeChanged() {
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum-plot] _onInterpolationModeChanged', this.interpolationMode);
+        }
+        this.dispatchEvent(new CustomEvent('plotted-changed', {detail: plottingTools, bubbles: true, composed: true}));
+      }
+    
+
+      _onPlottedChanged(evt) {
+        this.dataToPlot = [
+          {
+            gts: evt.detail.data,
+            params: evt.detail.params,
+            globalParams: {
+              interpolate: this.interpolationMode,
+            },
+          }];
+        if (this.debug) {
+          console.debug('[wapr10-embeddable-quantum-plot] _onPlottedChanged', this.dataToPlot);
+        }
+      }
+    }
+    window.customElements.define(Warp10EmbeddableQuantumPlot.is, Warp10EmbeddableQuantumPlot);
+  </script>
+</dom-module>

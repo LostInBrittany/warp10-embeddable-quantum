@@ -14,6 +14,7 @@
 <link rel="import" href="../granite-alert/granite-alert.html">
 <link rel="import" href="../granite-spinner/granite-spinner.html">
 
+
 <link rel="import" href="../warp10-quantum-elements/quantum-response-container.html">
 <link rel="import" href="../warp10-quantum-elements/quantum-icons.html">"
 
@@ -23,6 +24,7 @@
 <script src="../ace-builds/src-min-noconflict/snippets/text.js"></script>
 
 <link rel="import" href="./warp10-embeddable-quantum-conf.html">
+<link rel="import" href="./warp10-embeddable-quantum-plot.html">
 
 <dom-module id="warp10-embeddable-quantum">
   <template>
@@ -87,6 +89,9 @@
         loading="{{loading}}"
         debug="[[debug]]"></warp10-warpscript-caller>
 
+    
+    <h2 class="title">WarpScript</h2>  
+
     <ace-widget
         id="editor"
         theme="ace/theme/eclipse"
@@ -130,15 +135,25 @@
       <quantum-response-container
         id="response_container"
         response="{{stack}}"
-        debug="[[debug]]"
         received="{{received}}"
-        hidden$="{{!_hasAResponse}}"></quantum-response-container>
+        hidden$="{{!_hasAResponse}}"
+        debug="[[debug]]"></quantum-response-container>
       <granite-alert level="danger" hidden$="{{!_hasAnError}}">
         {{errorMsg}}
       </granite-alert>
     </div>
 
+    <div id="plot-container" 
+        class="top-10" 
+        hidden$="{{!_hasAResponse}}">
+
+      <warp10-embeddable-quantum-plot 
+          stack="[[stack]]"
+          debug="[[debug]]"></warp10-embeddable-quantum-plot>
+
+    </div>  
   </template>
+
 
   <script>
     /**
@@ -255,6 +270,7 @@
       }
       connectedCallback() {
         super.connectedCallback();
+        this.backend = JSON.parse(localStorage.getItem('warp10-backend-conf')) || this.defaultBackend;
         window.addEventListener('storage', (evt) => {
           if (this.debug) {
             console.log('[wapr10-embeddable-quantum] onStorage', evt.key);
@@ -295,7 +311,6 @@
         }
         return this.backend.url + this.backend.execEndpoint;
       }
-
 
       // ************************************************************************
       // Observers
