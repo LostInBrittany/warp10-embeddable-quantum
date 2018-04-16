@@ -300,25 +300,38 @@
         var elapsed = this._getElapsed(ironRequest);
         var fetched = this._getFetched(ironRequest);
         var operations = this._getOperations(ironRequest);
-        var stack = looseJSON.parse(ironRequest.response);
+        try {
+          var stack = looseJSON.parse(ironRequest.response);
 
-        var response = {
-          stack: stack,
-          options: {
-            elapsed: elapsed,
-            fetched: fetched,
-            operations: operations,
-          },
-        };
+          var response = {
+            stack: stack,
+            options: {
+              elapsed: elapsed,
+              fetched: fetched,
+              operations: operations,
+            },
+          };
 
-        this.lastResponse = response;
+          this.lastResponse = response;
 
-        if (this.debug) {
-          console.log('[warp10-warpscript-caller] receivedResponse - Updated!', response);
+          if (this.debug) {
+            console.log('[warp10-warpscript-caller] receivedResponse - Updated!', response);
+          }
+          this.fire('response', response, {
+            bubbles: false,
+          });
+        } catch (error) {
+          console.log('[warp10-warpscript-caller] receivedResponse - error!', error);
+          error.request = ironRequest;
+          error.elapsed = elapsed;
+          error.fetched = fetched;
+          error.operations = operations;
+          error.errorMsg = error.message;
+          error.errorLine = 1;
+          this.fire('error', error, {
+            bubbles: false,
+          });
         }
-        this.fire('response', response, {
-          bubbles: false,
-        });
         this.loading = false;
       },
       _handleError: function(event, error) {

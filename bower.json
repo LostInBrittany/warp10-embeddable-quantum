@@ -4,7 +4,8 @@
   "main": "warp10-embeddable-quantum.html",
   "dependencies": {
     "polymer": "Polymer/polymer#^2.0.0",
-    "warp10-quantum-elements": "LostInBrittany/warp10-quantum-elements#^2.0.5"
+    "warp10-quantum-elements": "LostInBrittany/warp10-quantum-elements#^2.0.5",
+    "warp10-iron": "LostInBrittany/warp10-iron#^2.0.2"
   },
   "devDependencies": {
     "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",

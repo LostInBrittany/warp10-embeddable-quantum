@@ -34,12 +34,7 @@
     };
     let text;
     let error = function(m) {
-      throw new Error({
-        name: 'SyntaxError',
-        message: m,
-        at: at,
-        text: text,
-      });
+      throw new Error(`Syntax error - ${m} at char ${at} from '${text}'`);
     };
     let next = function(c) {
       return ch = text.charAt(at++);
@@ -172,7 +167,7 @@
         check('t');
         check('y');
         return Infinity;
-      }
+      } 
       error('Unexpected \'' + ch + '\'');
     };
     let array = function() {

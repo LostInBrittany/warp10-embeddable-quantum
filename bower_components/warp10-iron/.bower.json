@@ -38,14 +38,14 @@
     "web-component-tester": "^6.0.0",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0"
   },
-  "version": "2.0.1",
-  "_release": "2.0.1",
+  "version": "2.0.2",
+  "_release": "2.0.2",
   "_resolution": {
     "type": "version",
-    "tag": "2.0.1",
-    "commit": "15cc4cedd4ff0b25255ecd2b24fc1e51e9506faa"
+    "tag": "2.0.2",
+    "commit": "a6d70daabe1a4803810e58747b361ce9ab7425d5"
   },
-  "_source": "https://github.com/cityzendata/warp10-iron.git",
-  "_target": "^2.0.1",
-  "_originalSource": "cityzendata/warp10-iron"
+  "_source": "https://github.com/LostInBrittany/warp10-iron.git",
+  "_target": "^2.0.0",
+  "_originalSource": "LostInBrittany/warp10-iron"
 }

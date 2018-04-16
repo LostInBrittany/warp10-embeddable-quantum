@@ -284,14 +284,15 @@
             this.backend = JSON.parse(localStorage.getItem('warp10-backend-conf'));
           }
         });
-        if (this.debug) {
-          console.log('[wapr10-embeddable-quantum] connectedCallback');
-        }
         this._backendChanged();
     
         if (!this.warpscript && this.$.slot.assignedNodes()[0]) {
           this.warpscript = this.$.slot.assignedNodes()[0].nodeValue;
-        }        
+        }    
+        if (this.debug) {
+          console.log('[wapr10-embeddable-quantum] connectedCallback',
+              this.warpscript, this.$.slot.assignedNodes());
+        }
       }
 
       // ************************************************************************
