@@ -9,13 +9,13 @@
 <link rel="import" href="../paper-radio-group/paper-radio-group.html">
 
 <link rel="import" href="../warp10-iron/warp10-gts-tools.html">
-<link rel="import" href="../warp10-iron/warp10-gts-plotting-tools.html">
 
-<link rel="import" href="../warp10-quantum-elements/quantum-gts-tree.html">
 
 <link rel="import" href="../warp10-quantumviz/warp10-display-dy-chart.html">
 <link rel="import" href="../warp10-quantumviz/quantumviz-annotations.html">
 
+<link rel="import" href="./quantum-gts-tree.html">
+<link rel="import" href="./warp10-gts-plotting-tools.html">
 <dom-module id="warp10-embeddable-quantum-plot">
   <template>
     <style>
@@ -80,6 +80,7 @@
         id="gts-tree"
         data="{{_gtsStack}}"
         plotted-changed="{{changed}}"
+        plotting-tools="{{plottingTools}}"
         on-plotted-changed="_onPlottedChanged"
         on-show-image="_handleShowImage"
         on-hide-image="_handleHideImage"
@@ -178,6 +179,11 @@
         }
       }  
 
+      ready() {
+        super.ready();
+        this.plottingTools = new Warp10GtsPlottingTools();
+      }
+
       // ************************************************************************
       // Computed properties
       // ************************************************************************
@@ -196,13 +202,13 @@
         }
         if (this._gtsStack) {
           let flattenedGtsIdArray = gtsTools.flattenGtsIdArray(this._gtsStack, []);
-          plottingTools.refresh(flattenedGtsIdArray);
+          this.plottingTools.refresh(flattenedGtsIdArray);
           this.stackedGtsList = flattenedGtsIdArray;
           if (this.debug) {
             console.log('[wapr10-embeddable-quantum-plot] _onStackChanged - do refresh', this.stackedGtsList);
           }
           this.dispatchEvent(new CustomEvent('plotted-changed', {
-            detail: plottingTools,
+            detail: this.plottingTools,
             bubbles: true,
             composed: true
           }));
@@ -214,7 +220,7 @@
         if (this.debug) {
           console.debug('[wapr10-embeddable-quantum-plot] _onInterpolationModeChanged', this.interpolationMode);
         }
-        this.dispatchEvent(new CustomEvent('plotted-changed', {detail: plottingTools, bubbles: true, composed: true}));
+        this.dispatchEvent(new CustomEvent('plotted-changed', {detail: this.plottingTools, bubbles: true, composed: true}));
       }
     
 

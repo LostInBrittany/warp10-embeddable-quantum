@@ -1,0 +1,247 @@
+<script>
+
+
+  class Warp10GtsPlottingTools {
+   
+    constructor() {
+
+      this.id = [];
+      this.data = [];
+      this.names = [];
+      this.color = [];
+      this.params = [];
+      this.currentColorIndex = -1;
+      this.palette = [
+        '#001f3f', // NAVY
+        '#0074D9', // BLUE
+        '#7FDBFF', // AQUA
+        '#39CCCC', // TEAL
+        '#3D9970', // OLIVE
+        '#2ECC40', // GREEN
+        '#01FF70', // LIME
+        '#FFDC00', // YELLOW
+        '#FF851B', // ORANGE
+        '#FF4136', // RED
+        '#85144b', // MAROON
+        '#F012BE', // FUSCHIA
+        '#B10DC9', // PURPLE
+        '#111111', // BLACK
+        '#AAAAAA', // GRAY
+        '#DDDDDD', // SILVER
+      ];
+      this.maxColors = 16;
+      this.MIN_TS = 0;
+      this.MAX_TS = Math.pow(2, 53) - 1; 
+    }
+
+    isArray(value) {
+      return value && typeof value === 'object' && value instanceof Array && typeof value.length === 'number'
+        && typeof value.splice === 'function' && !(value.propertyIsEnumerable('length'));
+    }
+    isGts(gts) {
+      return !((gts.c === null) || (gts.l === null)
+        || (gts.values === null) || !this.isArray(gts.values));
+    }
+    isGtsToPlot(gts) {
+      if (!this.isGts(gts)) {
+        return false;
+      }
+      // We look at the first value, if it's a String or Boolean it's an annotation GTS,
+      // if it's a number it's a GTS to plot
+      return typeof(gts.values[0].y) === 'number';
+    }
+    equalMetadata(a, b) {
+      if (a.c === undefined || b.c === undefined || 
+          a.l === undefined || b.l === undefined ||
+          !(a.l instanceof Object) || !(b.l instanceof Object)) {
+        console.error('[warp10-gts-plotting-tools] equalMetadata',
+            'Error in GTS, metadata is not well formed');
+        return false;
+      }
+      if (a.c !== b.c) {
+        return false;
+      }
+      for (let p in a.l) {
+        if (!b.l.hasOwnProperty(p)) return false;
+        if (a.l[p] !== b.l[p]) return false;
+      }
+      for (let p in b.l) {
+        if (!a.l.hasOwnProperty(p)) return false;
+      }
+      return true;
+    }
+
+    getColor(index) {
+      return this.palette[index % this.maxColors];
+    }
+    currentColor() {
+      return this.getColor(this.currentColorIndex);
+    }
+    nextColor() {
+      this.currentColorIndex += 1;
+      return this.currentColor();
+    }
+    removeColorIfLast(color) {
+      if (color === this.currentColor()) {
+        return this.currentColorIndex -= 1;
+      }
+    }
+
+    isPlotted(gts) {
+      return gts && gts.id && this.id.indexOf(gts.id) >= 0;
+    }
+    gtsColor(gts) {
+      if (!this.isPlotted(gts)) {
+        return '';
+      }      
+      let index = this.id.indexOf(gts.id);
+      return 'background-color:' + this.params[index].color + ';';
+    }
+
+    add(gts) {
+      if (!this.isPlotted(gts)) {
+        if (this.debug) {
+          console.log('[warp10-gts-plotting-tools] add', gts);
+        }
+        this.data.push(gts);
+        this.names.push({
+          c: gts.c,
+          l: gts.l,
+          id: gts.id,
+        });
+        this.params.push({color: this.nextColor()});
+        this.id.push(gts.id);
+      }
+    }
+    remove(gts) {
+      let index;
+      if (this.isPlotted(gts)) {
+        index = this.id.indexOf(gts.id);
+        if (index > -1) {
+          this.id.splice(index, 1);
+          this.data.splice(index, 1);
+          this.names.splice(index, 1);
+          this.removeColorIfLast(this.params[index].color);
+          this.params.splice(index, 1);
+        }
+      }
+    }
+
+    refresh(gtsList) {
+      if (this.debug) {
+        console.debug('[warp10-gts-plotting-tools] refresh', gtsList);
+      }
+
+      // Variable to see if the GTS shown on graph still exists in new data
+      let gtsInPlottedStillExists = [];
+      this.id.forEach((item) => {
+        gtsInPlottedStillExists.push(false);
+      });
+      if (this.debug) {
+        console.debug('[warp10-gts-plotting-tools] refresh', gtsInPlottedStillExists);
+      }
+
+      gtsList.forEach((gts) => {
+        if (this.isPlotted(gts)) {
+          let i = this.id.indexOf(gts.id);
+          if (this.equalMetadata(this.names[i], gts)) {
+            this.data[i] = gts;
+            gtsInPlottedStillExists[i] = true;
+          }
+        }
+      });
+
+      for (let index = gtsInPlottedStillExists.length - 1; index >= 0; index--) {
+        if (!gtsInPlottedStillExists[index]) {
+          this.id.splice(index, 1);
+          this.data.splice(index, 1);
+          this.names.splice(index, 1);
+          this.removeColorIfLast(this.params[index].color);
+          this.params.splice(index, 1);
+        }
+      }
+    }
+
+    gtsToNvd3(gts) {
+      console.warning('[warp10-gts-plotting-tools] Deprecated function gtsToNvd3()',
+          'Please don\'t use it ');
+      let nvd3Series = {
+        key: '',
+        values: [],
+        c: '',
+        l: '',
+        id: '',
+      };
+      nvd3Series.c = gts.c;
+      nvd3Series.l = gts.l;
+      nvd3Series.id = gts.id;
+      nvd3Series.key = ' ' + gts.id + ' - ' + gts.c;
+      if (gts.l !== null) {
+        nvd3Series.key += ' - ' + (JSON.stringify(gts.l));
+      }
+
+      if (gts.v !== undefined) {
+        // Sort values
+        let values = gts.v.sort(function(a, b) {
+          return a.ts - b.ts;
+        });
+        values.forEach((metric) => {
+          nvd3Series.values.push({x: Math.round(metric.ts / 1000), y: metric.value});
+        });
+      }
+      // console.debug("[warp10-gts-plotting-tools] gtsToNvd3 ",nvd3Series)
+      return nvd3Series;    
+    }
+    toNvd3Graph() {
+      let chartData = {};
+      let sparklines = [];
+      if (this.debug) {
+        console.log('[warp10-gts-plotting-tools] toNvd3Graph', this.data);
+      }      
+      this.data.forEach((item, i) => {
+        if (this.isGtsToPlot(item)) {
+          let sl = this.data[i];
+          sl.color = this.params[i].color;
+          sl.key = this.data[i].key;
+          sl.area = false;
+          sl.interpolate = 'step-before';
+          // console.debug("[warp10-gts-plotting-tools] toNvd3Graph - sl", sl);
+          sparklines.push(sl);
+        }
+      });
+
+      let tickFormat = function(d) {
+        let dx = sparklines[0].values[d] && sparklines[0].values[d].x || 0;
+        return dx ? d3.time.format('%x')(new Date(dx)) : '';
+      };
+
+      chartData.sparklines = sparklines;
+      chartData.tickFormat = tickFormat;
+
+      return chartData;
+    }
+
+    getTimeBounds(gtsList) {
+
+      let bounds = {};
+      if (!this.isArray(gtsList)) {
+        return bounds;
+      }
+
+      bounds.min = this.MAX_TS;
+      bounds.max = this.MIN_TS;
+
+      for (let i = 0; i < gtsList.length; i++) {
+        let nvd3Series = gtsList[i];
+
+        if (bounds.min > nvd3Series.values[0].x) {
+          bounds.min = nvd3Series.values[0].x;
+        }
+        if (bounds.max < nvd3Series.values[nvd3Series.values.length - 1].x) {
+          bounds.max = nvd3Series.values[nvd3Series.values.length - 1].x;
+        }
+      }
+      return bounds;
+    }
+  }
+</script>
