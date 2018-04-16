@@ -1,0 +1,61 @@
+<!--
+@author Horacio Gonzalez (@lostinbrittany)
+@copyright (c) 2018 Horacio Gonzalez
+@license Apache 2.0
+-->
+<link rel="import" href="../polymer/polymer-element.html">
+
+
+
+<script>
+  /**
+   * `warp10-embeddable-quantum-conf`
+   * An configuration element for warp10-embeddable-quantum-conf
+   *
+   * @customElement
+   * @polymer
+   * @demo demo/index.html
+   */
+  class Warp10EmbeddableQuantumConf extends Polymer.Element {
+    static get is() { return 'warp10-embeddable-quantum-conf'; }
+    static get properties() {
+      return {
+        /**
+          * The choosen backend
+          *  The `backend` object is composed of:
+          *
+          *  - `id`: an unique id, a simple string to be used as HTML id
+          *  - `label`: the label to show in the UI
+          *  - `url`: the backend URL
+          *  - `execEndpoint`: the path of the WarpScript execution endpoint
+          *  - `findEndpoint`: the path of the Find endpoint
+          *  - `updateEndpoint`: the path of the update endpoint
+          *  - `deleteEndpoint`: the path of the delete endpoint
+          *  - `headerName`: the Warp10 header name to add for different operations
+          *
+          *  @type Backend
+          */
+        backend: {
+          type: Object,
+          observer: '_backendChanged',
+        },
+        debug: {
+          type: Boolean,
+          value: false,
+        },
+      };
+    }
+    connectedCallback() {
+      super.connectedCallback();
+    }
+
+    _backendChanged() {
+      if (this.debug) {
+        console.log('[warp10-backend-conf] _backendChanged', this.backend);
+      }
+      localStorage.setItem('warp10-backend-conf', JSON.stringify(this.backend));
+      window.dispatchEvent(new StorageEvent('storage', {key: 'warp10-backend-conf'}));
+    }
+  }
+  window.customElements.define(Warp10EmbeddableQuantumConf.is, Warp10EmbeddableQuantumConf);
+</script>

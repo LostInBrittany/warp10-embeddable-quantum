@@ -1,0 +1,43 @@
+{
+  "entrypoint": "index.html",
+  "shell": "warp10-embeddable-quantum.html",
+  "fragments": [],
+  "sources": [
+    "images/**/*",
+    "bower_components/d3/**",
+    "bower_components/font-roboto/fonts/**",
+    "index.html",
+    "warp10-embeddable-quantum.html"
+  ],
+  "extraDependencies": [
+    "bower_components/webcomponentsjs/*.js",
+    "bower_components/webcomponentsjs/webcomponents-loader.js"
+  ],
+  "builds": [
+    {
+      "name": "bundled",
+      "bundle": true,
+      "js": {
+        "minify": true
+      },
+      "css": {
+        "minify": true
+      },
+      "html": {
+        "minify": true
+      }
+    },
+    {
+      "name": "unbundled",
+      "js": {
+        "minify": true
+      },
+      "css": {
+        "minify": true
+      },
+      "html": {
+        "minify": true
+      }
+    }
+  ]
+}

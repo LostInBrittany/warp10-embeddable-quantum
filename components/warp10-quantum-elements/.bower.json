@@ -1,0 +1,86 @@
+{
+  "name": "warp10-quantum-elements",
+  "authors": [
+    "Horacio Gonzalez <horacio.gonzalez@gmail.com>"
+  ],
+  "description": "The basic elements used on Warp10's Quantum App ",
+  "keywords": [
+    "web-component",
+    "web-components",
+    "polymer",
+    "warpscript",
+    "ide",
+    "warp 10",
+    "warp10"
+  ],
+  "main": "index.html",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "homepage": "http://www.warp10.io",
+  "dependencies": {
+    "polymer": "polymer/polymer#^2.0.0",
+    "app-layout": "PolymerElements/app-layout#^2.0.0",
+    "app-localize-behavior": "PolymerElements/app-localize-behavior#^2.0.0",
+    "app-pouchdb": "PolymerElements/app-pouchdb#^2.0.0",
+    "app-route": "PolymerElements/app-route#^2.0.0",
+    "iron-a11y-keys": "PolymerElements/iron-a11y-keys#^2.0.0",
+    "iron-a11y-keys-behavior": "PolymerElements/iron-a11y-keys-behavior#^2.0.0",
+    "paper-checkbox": "PolymerElements/paper-checkbox#^2.0.0",
+    "iron-flex-layout": "PolymerElements/iron-flex-layout#^2.0.0",
+    "iron-icon": "PolymerElements/iron-icon#^2.0.0",
+    "iron-icons": "PolymerElements/iron-icons#^2.0.0",
+    "iron-iconset-svg": "PolymerElements/iron-iconset-svg#^2.0.0",
+    "iron-localstorage": "PolymerElements/iron-localstorage#^2.0.0",
+    "iron-media-query": "PolymerElements/iron-media-query#^2.0.0",
+    "iron-pages": "PolymerElements/iron-pages#^2.0.0",
+    "iron-selector": "PolymerElements/iron-selector#^2.0.0",
+    "paper-badge": "PolymerElements/paper-badge#^2.0.0",
+    "paper-button": "PolymerElements/paper-button#^2.0.0",
+    "paper-dialog": "PolymerElements/paper-dialog#^2.0.0",
+    "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^2.0.0",
+    "paper-icon-button": "PolymerElements/paper-icon-button#^2.0.0",
+    "paper-input": "PolymerElements/paper-input#^2.0.0",
+    "paper-item": "PolymerElements/paper-item#^2.0.0",
+    "paper-listbox": "PolymerElements/paper-listbox#^2.0.0",
+    "paper-material": "PolymerElements/paper-material#^2.0.0",
+    "paper-radio-group": "PolymerElements/paper-radio-group#^2.0.0",
+    "paper-radio-button": "PolymerElements/paper-radio-button#^2.0.0",
+    "paper-toast": "PolymerElements/paper-toast#^2.0.0",
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#^2.0.0",
+    "paper-tooltip": "PolymerElements/paper-tooltip#^2.0.0",
+    "font-roboto": "PolymerElements/font-roboto-local#^1.0.1",
+    "moment-js": "saeidzebardast/moment-js#^0.7.2",
+    "ace-widget": "LostInBrittany/ace-widget#~1.3.5",
+    "granite-ajax-saver": "LostInBrittany/granite-ajax-saver#^1.1.0",
+    "granite-alert": "LostInBrittany/granite-alert#^1.2.0",
+    "granite-file-saver": "LostInBrittany/granite-file-saver#^1.1.0",
+    "granite-file-reader": "LostInBrittany/granite-file-reader#^1.3.0",
+    "granite-qrcode-generator": "LostInBrittany/granite-qrcode-generator#^1.1.4",
+    "granite-spinner": "LostInBrittany/granite-spinner#^2.1.0",
+    "warp10-iron": "cityzendata/warp10-iron#^2.0.1",
+    "warp10-quantumviz": "cityzendata/warp10-quantumviz#^2.1.3",
+    "renderjson": "^1.3.2",
+    "paper-tabs": "PolymerElements/paper-tabs#^2.0.0"
+  },
+  "devDependencies": {
+    "web-component-tester": "^6.0.0"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0",
+    "webcomponentsjs": "^v1.0.2"
+  },
+  "version": "2.0.5",
+  "_release": "2.0.5",
+  "_resolution": {
+    "type": "version",
+    "tag": "2.0.5",
+    "commit": "ead6d8148bd95c283b1d5a809e9815af2314dd29"
+  },
+  "_source": "https://github.com/LostInBrittany/warp10-quantum-elements.git",
+  "_target": "^2.0.5",
+  "_originalSource": "LostInBrittany/warp10-quantum-elements"
+}

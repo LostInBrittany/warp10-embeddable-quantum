@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>warp10-embeddable-quantum demo</title>
+
+    <script src="../../webcomponentsjs/webcomponents-loader.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="../warp10-embeddable-quantum.html">
+
+    <style>
+      html {
+        font-size: 14px;
+      }
+    </style>
+    <custom-style>
+      <style is="custom-style" include="demo-pages-shared-styles">
+      </style>
+    </custom-style>
+  </head>
+  <body>
+    <div class="vertical-section-container centered">
+      <h3>Basic warp10-embeddable-quantum demo</h3>
+      <demo-snippet>
+        <template>
+          <warp10-embeddable-quantum-conf 
+            backend='{"id":"ovhmetrics-poke","label":"OVH Metrics Poke","url":"https://gra1-poke.metrics.ovh.net/api/v0"}' 
+            debug></warp10-embeddable-quantum-conf>
+          <warp10-embeddable-quantum debug>
+NEWGTS 'toto' RENAME
+NOW NaN NaN NaN 10 ADDVALUE
+NOW 1 d - NaN NaN NaN 1 ADDVALUE
+
+[ 
+    NEWGTS 'tata' RENAME 
+
+    NOW NaN NaN NaN 10 ADDVALUE
+    NOW 1 d - NaN NaN NaN 1 ADDVALUE
+    NEWGTS 'titi' RENAME 
+]     
+          </warp10-embeddable-quantum>
+        </template>
+      </demo-snippet>
+    </div>
+  </body>
+</html>

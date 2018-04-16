@@ -1,0 +1,345 @@
+<!--
+@author Horacio Gonzalez (@lostinbrittany)
+@copyright (c) 2016 Cityzen Data
+@license Apache 2.0
+-->
+<link rel="import" href=" ../polymer/polymer.html">
+
+<link rel="import" href="../warp10-iron/warp10-gts-tools.html">
+<link rel="import" href="../warp10-iron/warp10-gts-plotting-tools.html">
+<link rel="import" href="./quantum-module-mixin.html">
+
+<!--
+Warp10 GTS stack tree 
+
+
+    
+    <quantum-gts-tree 
+        id="gts-tree" data="{{data}}" 
+        plotted-changed={{changed}}></quantum-gts-tree>
+-->
+
+<dom-module id="quantum-gts-tree">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      .popover {
+        max-width: none;
+        max-height: none;
+      }
+
+      div[hidden], i[hidden] {
+        display: none;
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: none;
+        overflow: hidden;
+      }
+
+      li {
+        position: relative;
+        padding: 0 0 0 20px;
+        line-height: 20px;
+      }
+
+      li .stack-level {
+        font-size: 1.25em;
+        font-weight: bold;
+        padding-top: 25px;
+        padding-bottom: 10px;
+      }
+
+      li .stack-level + div {
+        padding-left: 25px;
+      }
+
+      li .expanded {
+        padding: 1px 10px;
+        background: url(data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAAKElEQVQ4jWNgGFbgFQMDw38i8UuYJiYkA5hJsIwUtXQEo2EwGgZkAwBP/yN0kY5JiwAAAABJRU5ErkJggg==) no-repeat;
+      }
+
+      li .collapsed {
+        padding: 1px 10px;
+        background: url(data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAAXUlEQVQ4jWNgGCzgJwMDw38S8U8GBgYGJqgBjGRYSo4e3GAfAwMDP5oYIW/9RFb8n4GB4RQDA4MgktgvAgb8QjfgPwMDwyxyvYDNBSR54SADZhiQ5AWKwTBISAMHAKXXR27jzC2pAAAAAElFTkSuQmCC) no-repeat;
+      }
+
+      li .gtsInfo {
+        white-space: normal;
+        word-wrap: break-word;
+      }
+
+      li .gtsInfo[disabled] {
+        color: #aaaaaa;
+        cursor: not-allowed;
+      }
+
+      li .normal {
+      }
+
+      li .normal {
+        border-radius: 50%;
+        background-color: #bbbbbb;
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+      }
+
+      li i, li span {
+        cursor: pointer;
+      }
+
+      li .selected {
+        background-color: #aaddff;
+        font-weight: bold;
+        padding: 1px 5px;
+      }
+
+      .gts-classname {
+        color: #0074D9;
+      }
+
+      .gts-labelname {
+        color: #3d9970;
+      }
+
+      .gts-separator {
+        color: #bbbbbb;
+      }
+
+      .gts-labelvalue {
+        color: #AAAAAA;
+        font-style: italic;
+      }
+
+    </style>
+
+    <ul>
+      <template is="dom-repeat" items={{data.content}} as="node">
+
+        <li>
+          <div hidden$="{{branch}}" class="stack-level" on-tap="selectNodeHead" data-node="{{node}}">
+            Stack level {{index}}
+          </div>
+          <div>
+            <i class="collapsed" hidden$="{{isNotCollapsed(node)}}"
+               on-tap="selectNodeHead"></i>
+            <i class="expanded" hidden$="{{isCollapsed(node)}}"
+               on-tap="selectNodeHead"></i>
+
+            <template is="dom-if" if="{{isGts(node)}}">
+              <i class="normal" style$="{{gtsColor(node.gts, plottedChanged)}}" on-tap="switchPlotState"></i>
+              <span class="gtsInfo" on-tap="switchPlotState">
+                <span class='gts-classname'>{{node.gts.c}}</span>
+                <span class='gts-separator'>{</span>
+                <template is="dom-repeat" items="{{_toArray(node.gts.l)}}" as="label">
+                  <span>
+                    <span class='gts-labelname'>{{label.name}}</span>
+                    <span class='gts-separator'>=</span>
+                    <span class='gts-labelvalue'>{{label.value}}</span>
+                    <span hidden$="{{_lastIndex(index, node.gts.l)}}">,</span>
+                  </span>
+                </template>
+                <span class='gts-separator'>}</span>
+              </span>
+            </template>
+
+            <template is="dom-if" if="{{isImage(node)}}">
+              <i class="normal" style="background-color:#000000;"></i>
+              <span class="gtsInfo"
+                    on-mouseover="showImageOverlay"
+                    on-mouseout="hideImageOverlay"
+                    on-tap="showImageOverlay">
+                  <span class='gts-classname'>{{node.caption}}</span>
+              </span>
+            </template>
+
+            <template is="dom-if" if="[[node.content]]">
+              <span class="listInfo">
+                List of [[node.content.length]] item<template is="dom-if"
+                                                              if="[[_hasMoreThanOne(node.content)]]">s</template>
+              </span>
+              <quantum-gts-tree
+                id="gts-tree"
+                data="{{node}}"
+                branch
+                debug="[[debug]]"
+                plotted-changed="{{plottedChanged}}"></quantum-gts-tree>
+            </template>
+          </div>
+        </li>
+      </template>
+    </ul>
+  </template>
+</dom-module>
+
+<script>
+  /* globals Warp10, plottingTools */
+  // eslint-disable-next-line new-cap
+  class QuantumGTSTree extends Warp10QuantumModuleMixin(Polymer.Element) {
+    static get is() {
+      return 'quantum-gts-tree';
+    }
+
+    static get properties() {
+      return {
+        data: {
+          type: Array,
+          observer: 'dataChanged',
+        },
+        stringifiedData: {
+          type: String,
+          computed: 'stringifyData(data)',
+        },
+        treeId: {
+          type: String,
+        },
+        nodeId: {
+          type: String,
+          value: 'id',
+        },
+        nodeLabel: {
+          type: String,
+          value: 'label',
+        },
+        nodeChildren: {
+          type: String,
+          value: 'children',
+        },
+        branch: {
+          type: Boolean,
+          value: false,
+        },
+        // Used internally to detect changes
+        plottedChanged: {
+          type: Number,
+          value: 0,
+          notify: true,
+        },
+        debug: {
+          type: Boolean,
+          value: false,
+        },
+      };
+    }
+
+    ready() {
+      super.ready();
+      this.maxColors = 20;
+    }
+
+    _hasMoreThanOne(tab) {
+      return tab.length > 1;
+    }
+
+    stringifyData() {
+      return JSON.stringify(this.data);
+    }
+
+    dataChanged() {
+      if (this.debug) {
+        console.debug('[quantum-gts-tree] dataChanged', this.data);
+      }
+      this.dispatchEvent(new CustomEvent('plotted-changed', {detail: plottingTools, bubbles: true, composed: true}));
+      this.plottedChanged++;
+    }
+
+    selectNodeHead(e, detail) {
+      if (this.debug) {
+        console.debug('[quantum-gts-tree] selectNodeHead', e.model.node);
+      }
+      return e.model.node.collapsed = !e.model.node.collapsed;
+    }
+
+    switchPlotState(e, detail) {
+      if (this.debug) {
+        console.debug('[quantum-gts-tree] switchPlotState', e.model.node.gts);
+      }
+      let gts = e.model.node.gts;
+      if (!plottingTools.isPlotted(gts)) {
+        plottingTools.add(gts);
+        if (this.debug) {
+          console.log('[quantum-gts-tree] addToPlot', plottingTools);
+        }
+      } else {
+        plottingTools.remove(gts);
+        if (this.debug) {
+          console.log('[quantum-gts-tree] removeFromPlot', plottingTools);
+        }
+      }
+      this.dispatchEvent(new CustomEvent('plotted-changed', {detail: plottingTools, bubbles: true, composed: true}));
+      this.plottedChanged++;
+    }
+
+    isCollapsed(node) {
+      return !!(node.content === undefined || node.collapsed);
+    }
+
+    isNotCollapsed(node) {
+      return node.content === undefined || !node.collapsed;
+    }
+
+    hasContent(node) {
+      return node.content !== undefined;
+    }
+
+    isImage(node) {
+      return node.image !== undefined;
+    }
+
+    isGts(node) {
+      return node.gts !== undefined;
+    }
+
+    gtsColor(gts, plottedChanged) {
+      if (gts === undefined) {
+        return '';
+      }
+      if (this.debug) {
+        console.debug('[quantum-gts-tree] gtsColor', plottingTools.color);
+        console.debug('[quantum-gts-tree] gtsColor', plottingTools.id);
+      }
+      return plottingTools.gtsColor(gts);
+    }
+
+    showImageOverlay(e) {
+      if (this.debug) {
+        console.debug('[quantum-gts-tree] showImageOverlay', e);
+      }
+      let image = e.model.node.image;
+      let caption = e.model.node.caption;
+      let type = e.type;
+      this.dispatchEvent(new CustomEvent('show-image', {detail: {image: image, caption: caption, type: type}}));
+    }
+
+    hideImageOverlay(e) {
+      this.dispatchEvent(new CustomEvent('hide-image'));
+    }
+
+    _toArray(obj) {
+      if (obj === undefined) {
+        return [];
+      }
+      return Object.keys(obj).map(function(key) {
+        return {
+          name: key,
+          value: obj[key],
+        };
+      });
+    }
+
+    _lastIndex(index, obj) {
+      let array = this._toArray(obj);
+      return (index === array.length - 1);
+    }
+  }
+
+  // Register custom element definition using standard platform API
+  customElements.define(QuantumGTSTree.is, QuantumGTSTree);
+</script>
