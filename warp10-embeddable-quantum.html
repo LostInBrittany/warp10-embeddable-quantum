@@ -101,8 +101,13 @@
         placeholder="Type your WarpScript here..."
         on-editor-content="editorChangeAction"
         initial-focus
-        debug="[[debug]]"></ace-widget>       
+        value="[[warpscript]]"
+        debug="[[debug]]"> 
+        <slot id='slot'></slot>
+    </ace-widget>       
         
+    <div>
+    </div>
         
     <granite-spinner
       active="[[loading]]"
@@ -283,6 +288,10 @@
           console.log('[wapr10-embeddable-quantum] connectedCallback');
         }
         this._backendChanged();
+    
+        if (!this.warpscript && this.$.slot.assignedNodes()[0]) {
+          this.warpscript = this.$.slot.assignedNodes()[0].nodeValue;
+        }        
       }
 
       // ************************************************************************

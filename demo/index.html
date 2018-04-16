@@ -30,7 +30,19 @@
           <warp10-embeddable-quantum-conf 
             backend='{"id":"ovhmetrics-poke","label":"OVH Metrics Poke","url":"https://gra1-poke.metrics.ovh.net/api/v0"}' 
             debug></warp10-embeddable-quantum-conf>
-          <warp10-embeddable-quantum debug></warp10-embeddable-quantum>
+          <warp10-embeddable-quantum debug>
+NEWGTS 'toto' RENAME
+NOW NaN NaN NaN 10 ADDVALUE
+NOW 1 d - NaN NaN NaN 1 ADDVALUE
+
+[ 
+    NEWGTS 'tata' RENAME 
+
+    NOW NaN NaN NaN 10 ADDVALUE
+    NOW 1 d - NaN NaN NaN 1 ADDVALUE
+    NEWGTS 'titi' RENAME 
+]     
+          </warp10-embeddable-quantum>
         </template>
       </demo-snippet>
     </div>
